@@ -104,3 +104,20 @@ logi_fit |>
 Thus, in most cities, after adjusting for race and age, cases with male victims have more odds to be unsolved.
 
 # Problem 2
+
+Use code provided to download `Central Park` weather data.
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2022-01-01",
+    date_max = "2022-12-31") |>
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) |>
+  select(name, id, everything())
+```
+
