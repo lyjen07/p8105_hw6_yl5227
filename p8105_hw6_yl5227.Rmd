@@ -29,7 +29,78 @@ scale_fill_discrete = scale_fill_viridis_d
 
 # Problem 1
 
-```{r}
+data cleaning
 
+```{r}
+homi_df = 
+  read_csv("data/homicide-data.csv") |> 
+  mutate(
+    city_state = str_c(city, ", ", state),
+    solved = !disposition %in% c("Closed without arrest","Open/No arrest"),
+    victim_age = as.numeric(victim_age)
+  ) |> 
+  filter(
+    !city_state %in% c("Dallas, TX", "Phoenix, AZ", "Kansas City, MO", "Tulsa, AL"),
+    victim_race %in% c("Black", "White")
+  ) |> 
+  select(uid,city_state,solved,victim_race, victim_age, victim_sex) |> 
+  na.omit()
 ```
 
+Do the logistic regression on `Baltimore, MD`.
+
+```{r}
+logi_fit = 
+  homi_df |> 
+  filter(city_state == "Baltimore, MD") |> 
+  glm(solved~ victim_race + victim_age + victim_sex, data = _, family = "binomial")
+
+logi_fit |> 
+  broom::tidy() |> 
+  filter(term == "victim_sexMale") |> 
+  mutate(
+    odds_ratio = exp(estimate),
+    conf_low = exp(estimate  - 1.96 * std.error),
+    conf_high = exp(estimate + 1.96 * std.error)
+  )  |> 
+  select(term, odds_ratio, conf_low, conf_high)
+```
+
+Iterate over other cities with logistic regression.
+
+```{r}
+logi_fit =
+  homi_df |> 
+  nest(data = c(uid, solved, victim_age, victim_race, victim_sex)) |> 
+  mutate(
+    model = map(.x = data, ~glm(solved ~ victim_race + victim_age + victim_sex, data = .x, family = "binomial")),
+    estimate = map(.x  = model, ~filter(broom::tidy(.x), term == "victim_sexMale"))
+  ) |> 
+  unnest(estimate) |> 
+  mutate(
+    odds_ratio = exp(estimate),
+    conf_low = exp(estimate  - 1.96 * std.error),
+    conf_high = exp(estimate + 1.96 * std.error)
+  )  |> 
+  select(city_state, odds_ratio, conf_low, conf_high)
+
+logi_fit
+```
+
+Finally, plot the odds ratio between cities.
+
+```{r}
+logi_fit |> 
+  mutate(
+    city_state = fct_reorder(city_state, -odds_ratio)
+  ) |> 
+  ggplot(aes(x = odds_ratio, y = city_state)) +
+  geom_point() +
+  geom_vline(aes(xintercept = 1), color = "red") +
+  geom_errorbar(aes(xmin = conf_low, xmax = conf_high)) +
+  labs(title = "Odds ratio of solved cases between male and female victims")
+```
+
+Thus, in most cities, after adjusting for race and age, cases with male victims have more odds to be unsolved.
+
+# Problem 2
