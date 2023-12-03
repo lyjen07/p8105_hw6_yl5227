@@ -132,20 +132,42 @@ boot_straps =
   tibble(
     strap_num = 1:5000,
     strap_samp = rerun(5000, sample_frac(weather_df, replace = TRUE))
-  ) %>%
+  ) |> 
   mutate(
     models = map(.x = strap_samp, ~lm(tmax ~ tmin, data = .x)),
     beta = map(.x = models, ~pull(broom::tidy(.x), estimate)),
     rsq =  map(.x = models, ~pull(broom::glance(.x), r.squared)),
     beta_mult = map(beta, prod)
-  ) %>%
+  ) |> 
   mutate(
       rsq = as.numeric(rsq),
       beta_log = log(as.numeric(beta_mult))
-  ) %>%
+  ) |> 
   select(strap_num,rsq,beta_log) 
 ```
 
+Plot the distribution of $\hat{r}^2$ and $log(\beta_0\times\beta_1)$.
+
+```{r}
+rsq_plot = 
+  boot_straps |> 
+  ggplot(aes(x = rsq)) +
+  geom_density() +
+  xlab("r squared")+
+  labs(title = "distribution of r_squared and log beta")
+
+beta_plot = 
+  boot_straps |> 
+  ggplot(aes(x = beta_log)) +
+  geom_density() +
+  xlab("beta_0 times beta_1 ")
+
+rsq_plot + beta_plot 
+```
+
+The `rsq_plot` shows the distribution of $\hat{r}^2$ statistic, which is unimodal and it appears to be normally distributed around its mean. The spread of the values is quite narrow, suggesting a high level of consistency across the bootstrap samples. The peak of the distribution is around 0.92, indicating that, on average, approximately 92% of the variance in the response variable can be explained by the model.
+
+The `beta_plot` represents the distribution of the logarithm of the product of beta coefficients. The distribution is also unimodal and approximately normally distributed. The peak of the distribution is around 2.09, which suggests that the average value of the logarithm of the product of beta coefficients across the bootstrap samples is about 2.09.
 
 # Problem 3
 
