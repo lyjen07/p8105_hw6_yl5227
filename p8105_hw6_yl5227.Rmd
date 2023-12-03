@@ -7,6 +7,10 @@ output: github_document
 
 ```{r, include = FALSE, message = FALSE, warning = FALSE}
 library(tidyverse)
+library(p8105.datasets)
+library(patchwork)
+library(modelr)
+library(ggridges)
 
 knitr::opts_chunk$set(
 	echo = TRUE,
@@ -128,6 +132,7 @@ In the code chunk below, I remove rows that contain missing values and convert `
 
 ```{r}
 race_ls = c("white","black", "asian", "puerto rican", "other", "unknown")
+
 birth_df = 
   read_csv("data/birthweight.csv") |> 
   na.omit() |> 
@@ -140,3 +145,27 @@ birth_df =
   select(bwt, everything())
 ```
 
+I tried to build my model through step wise regression:
+
+```{r}
+model_mine = 
+  step(lm(bwt ~ ., data = birth_df), direction = "both", trace = 0)
+
+formula_mine = formula(model_mine)
+formula_mine
+```
+
+Above is the optimal model the step wise regression found. Among the `r ncol(birth_df)-1`, only 11 variables are selected. Save the formula for later use.
+
+As required, make a plot of model residuals:
+
+```{r}
+birth_df |> 
+  add_predictions(model_mine) |> 
+  add_residuals(model_mine) |> 
+  ggplot(aes(x = pred, y = resid)) +
+  geom_point() +
+  labs(title = "residue vs predicted outcomes")
+```
+
+We can see that the plot revealed some outliers and the variance across predicted values are not equal. That indicates our model may not be the best model.
