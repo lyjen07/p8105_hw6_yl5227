@@ -169,6 +169,27 @@ The `rsq_plot` shows the distribution of $\hat{r}^2$ statistic, which is unimoda
 
 The `beta_plot` represents the distribution of the logarithm of the product of beta coefficients. The distribution is also unimodal and approximately normally distributed. The peak of the distribution is around 2.09, which suggests that the average value of the logarithm of the product of beta coefficients across the bootstrap samples is about 2.09.
 
+The following code calculates the Confidence Interval (CI) for the two quantities based on normal distribution.
+
+```{r}
+conf_int =
+  boot_straps |> 
+  pivot_longer(
+    rsq:beta_log,
+    names_to = "variable",
+    values_to = "value"
+  ) |> 
+  group_by(variable) |> 
+  summarise(
+    lower_CI = quantile(value,0.025),
+    higher_CI = quantile(value,0.975)
+  )
+
+conf_int
+```
+
+The 95% confidence interval for $\hat{r}^2$ is `(0.89,0.94)` and for $log(\beta_0\times\beta_1)$ is `(2.05,2.13)`
+
 # Problem 3
 
 In the code chunk below, I remove rows that contain missing values and convert `babysex`, `frace`, `mrace` and `malform` to categorical factors with corresponding values.
