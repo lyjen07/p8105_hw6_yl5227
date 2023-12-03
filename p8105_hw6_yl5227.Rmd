@@ -125,6 +125,27 @@ weather_df =
   select(name, id, everything())
 ```
 
+Bootstrap the 5000 samples and calculate the $\hat{r}^2$, $log(\beta_0\times\beta_1)$
+
+```{r}
+boot_straps = 
+  tibble(
+    strap_num = 1:5000,
+    strap_samp = rerun(5000, sample_frac(weather_df, replace = TRUE))
+  ) %>%
+  mutate(
+    models = map(.x = strap_samp, ~lm(tmax ~ tmin, data = .x)),
+    beta = map(.x = models, ~pull(broom::tidy(.x), estimate)),
+    rsq =  map(.x = models, ~pull(broom::glance(.x), r.squared)),
+    beta_mult = map(beta, prod)
+  ) %>%
+  mutate(
+      rsq = as.numeric(rsq),
+      beta_log = log(as.numeric(beta_mult))
+  ) %>%
+  select(strap_num,rsq,beta_log) 
+```
+
 
 # Problem 3
 
