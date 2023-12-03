@@ -121,3 +121,22 @@ weather_df =
   select(name, id, everything())
 ```
 
+
+# Problem 3
+
+In the code chunk below, I remove rows that contain missing values and convert `babysex`, `frace`, `mrace` and `malform` to categorical factors with corresponding values.
+
+```{r}
+race_ls = c("white","black", "asian", "puerto rican", "other", "unknown")
+birth_df = 
+  read_csv("data/birthweight.csv") |> 
+  na.omit() |> 
+  mutate(
+    babysex = factor(babysex, levels = 1:2, labels = c("male","female")),
+    frace = factor(frace, levels = c(1,2,3,4,8,9),labels = c("white","black", "asian", "puerto rican", "other", "unknown")),
+    mrace = factor(mrace, levels = c(1,2,3,4,8),labels = c("white","black", "asian", "puerto rican", "other")),
+    malform = factor(malform, levels = 0:1,labels = c("absent","present"))
+  ) |> 
+  select(bwt, everything())
+```
+
